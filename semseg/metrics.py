@@ -11,7 +11,7 @@ class Metrics:
 
     def update(self, pred: Tensor, target: Tensor) -> None:
         pred = pred.argmax(dim=1)
-        keep = target != self.ignore_label
+        keep = target != -1
         self.hist += torch.bincount(target[keep] * self.num_classes + pred[keep], minlength=self.num_classes**2).view(self.num_classes, self.num_classes)
 
     def compute_iou(self) -> Tuple[Tensor, Tensor]:

@@ -3,7 +3,7 @@ import torch.nn as nn
 import math
 import warnings
 from torch.nn.modules.utils import _pair as to_2tuple
-from .bricks import DownSample, LayerScale, StochasticDepth, DWConv3x3, NormLayer
+from ..bricks import DownSample, LayerScale, StochasticDepth, DWConv3x3, NormLayer
 import torch.nn.functional as F
 _norm_type = 'batch_norm'
 
@@ -72,8 +72,11 @@ class MSCA(nn.Module):
     def __init__(self, dim):
         super(MSCA, self).__init__()
         # input
-        self.conv55 = nn.Conv2d(dim, dim, 5, padding=2, groups=dim) 
+        self.conv33 = nn.Conv2d(dim, dim, 3, padding=1, groups=dim) 
         # split into multipats of multiscale attention
+        self.conv13_0 = nn.Conv2d(dim, dim, (1,3), padding=(0, 1), groups=dim)
+        self.conv13_1 = nn.Conv2d(dim, dim, (3,1), padding=(1, 0), groups=dim)
+
         self.conv17_0 = nn.Conv2d(dim, dim, (1,7), padding=(0, 3), groups=dim)
         self.conv17_1 = nn.Conv2d(dim, dim, (7,1), padding=(3, 0), groups=dim)
 
@@ -89,7 +92,9 @@ class MSCA(nn.Module):
         
         skip = x.clone()
 
-        c55 = self.conv55(x)
+        c33 = self.conv33(x)
+        c13 = self.conv13_0(x)
+        c13 = self.conv13_1(c13)
         c17 = self.conv17_0(x)
         c17 = self.conv17_1(c17)
         c111 = self.conv111_0(x)
@@ -97,7 +102,7 @@ class MSCA(nn.Module):
         c211 = self.conv211_0(x)
         c211 = self.conv211_1(c211)
 
-        add = c55 + c17 + c111 + c211
+        add = c33 + c13 + c17 + c111 + c211
 
         mixer = self.conv11(add)
 

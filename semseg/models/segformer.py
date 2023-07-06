@@ -15,7 +15,6 @@ class SegFormer(BaseModel):
         y = self.backbone(x)
         y = self.decode_head(y)   # 4x reduction in image size
         y = F.interpolate(y, size=x.shape[2:], mode='bilinear', align_corners=False)    # to original image shape
-        print(y.shape)
         return y
 
 

@@ -10,17 +10,18 @@ import numpy as np
 import cv2
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+import matplotlib.pyplot as plt
 import os
 
 PALETTE = [
         [0, 0, 0],
-        [1, 1, 1]
+        [255, 255, 255]
     ]
 
 class CVC_ColonDB(Dataset):
     CLASSES = [
         'background',
-        'polyp'
+        'foreground'
     ]
 
     def __init__(self, root: str, split: str = 'train', transform = None) -> None:
@@ -39,37 +40,37 @@ class CVC_ColonDB(Dataset):
         print(f"Found {len(self.files)} {split} images.")
 
     @staticmethod
-    def convert2mask(mask):
+    def convert_to_mask(mask):
         h, w = mask.shape[:2]
         seg_mask = np.zeros((h,w, len(PALETTE)))
-
         for i, label in enumerate(PALETTE):
             seg_mask[:, :, i] = np.all(mask == label, axis=-1)
-
         return seg_mask
+        # _, mask = cv2.threshold(mask, 1, 255, cv2.THRESH_BINARY)
+        # return mask
 
     def __len__(self):
         return len(self.files)
 
     def __getitem__(self, index: int):
         img_path = str(self.files[index])
-        lbl_path = str(self.files[index]).replace('images', 'masks').replace('.png', '.png')
+        lbl_path = str(self.files[index]).replace('images', 'annotations').replace('.png', '.png')
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         mask = cv2.imread(lbl_path)
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB)
-        mask = self.convert2mask(mask)
+        mask = self.convert_to_mask(mask)
+
         if self.transform is not None:
             transformed = self.transform(image=image, mask=mask)
             
             image = transformed["image"]
             mask = transformed["mask"]
-            
             return image.float(), mask.argmax(dim=2).long()
         
         else:
-            return image.float(), mask.long()
+            return image.float(), mask.argmax(dim=2).long()
 
 def create_dataloaders(dir, split, image_size, batch_size, num_workers=os.cpu_count()):
     if isinstance(image_size, int):
@@ -77,6 +78,8 @@ def create_dataloaders(dir, split, image_size, batch_size, num_workers=os.cpu_co
     
     transform = A.Compose([
         A.Resize(height=image_size[0], width=image_size[1]),
+        A.HorizontalFlip(p=0.5),
+        # A.RandomScale(scale_limit=(0.5, 2), p=0.5),
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         ToTensorV2()
     ])

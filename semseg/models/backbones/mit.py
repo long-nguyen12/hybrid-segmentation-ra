@@ -101,6 +101,7 @@ mit_settings = {
 
 class MiT(nn.Module):
     def __init__(self, model_name: str = 'B0'):
+        print(model_name)
         super().__init__()
         assert model_name in mit_settings.keys(), f"MiT model name should be in {list(mit_settings.keys())}"
         embed_dims, depths = mit_settings[model_name]

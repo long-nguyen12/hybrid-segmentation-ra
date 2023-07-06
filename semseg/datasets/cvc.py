@@ -11,6 +11,7 @@ import cv2
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import os
+import multiprocessing as mp
 
 PALETTE = [
         [0, 0, 0],
@@ -72,12 +73,13 @@ class CVC_ClinicDB(Dataset):
         else:
             return image.float(), mask.long()
 
-def create_dataloaders(dir, split, image_size, batch_size, num_workers=os.cpu_count()):
+def create_dataloaders(dir, split, image_size, batch_size, num_workers=mp.cpu_count()):
     if isinstance(image_size, int):
         image_size = [image_size, image_size]
     
     transform = A.Compose([
         A.Resize(height=image_size[0], width=image_size[1]),
+        A.HorizontalFlip(p=0.5),
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         ToTensorV2()
     ])

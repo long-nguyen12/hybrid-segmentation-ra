@@ -13,8 +13,8 @@ DATASET:
 
 TRAIN:
   IMAGE_SIZE    : [352, 352]    # training image size in (h, w)
-  BATCH_SIZE    : 8               # batch size used to train
-  EPOCHS        : 200             # number of epochs to train
+  BATCH_SIZE    : 4               # batch size used to train
+  EPOCHS        : 300             # number of epochs to train
   EVAL_INTERVAL : 20              # evaluation interval during training
   AMP           : false           # use AMP in training
   DDP           : false           # use DDP training
@@ -25,8 +25,8 @@ LOSS:
 
 OPTIMIZER:
   NAME          : adamw           # optimizer name
-  LR            : 0.001           # initial learning rate used in optimizer
-  WEIGHT_DECAY  : 0.01            # decay rate used in optimizer 
+  LR            : 0.0004           # initial learning rate used in optimizer
+  WEIGHT_DECAY  : 0.1            # decay rate used in optimizer 
 
 SCHEDULER:
   NAME          : warmuppolylr    # scheduler name

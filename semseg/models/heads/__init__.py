@@ -1,3 +1,3 @@
 from .segformer import SegFormerHead
-
-__all__ = ['SegFormerHead']
+from .segnext import HamDecoder
+__all__ = ['SegFormerHead', 'HamDecoder']
