@@ -149,6 +149,7 @@ class HyBrid(BaseModel):
 
     def forward(self, x: Tensor) -> Tensor:
         x_size = x.size()[2:]
+
         y = self.backbone(x)
         # apply RA module for each feature block
         x1, x2, x3, x4 = y
@@ -163,7 +164,6 @@ class HyBrid(BaseModel):
         x2_size = x2.size()[2:]
         x3_size = x3.size()[2:]
         x4_size = x4.size()[2:]
-
         # decode head
         y = self.decode_head([y1, y2, y3, y4])   # 4x reduction in image size
         y = F.interpolate(y, size=x.shape[2:], mode='bilinear', align_corners=True)    # to original image shape

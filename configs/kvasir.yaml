@@ -1,5 +1,5 @@
 DEVICE          : cuda              # device used for training and evaluation (cpu, cuda, cuda0, cuda1, ...)
-SAVE_DIR        : 'output_kvasir_1'         # output folder name used for saving the model, logs and inference results
+SAVE_DIR        : 'output_hybrid_4'         # output folder name used for saving the model, logs and inference results
 
 MODEL:                                    
   NAME          : HyBrid                                           # name of the model you are using
@@ -7,7 +7,7 @@ MODEL:
   PRETRAINED    : 'checkpoints/backbones/mscan_l.pth' 
 
 DATASET:
-  NAME          : Kvasir                                          # dataset name to be trained with (camvid, cityscapes, ade20k)
+  NAME          : Mixed                                          # dataset name to be trained with (camvid, cityscapes, ade20k)
   ROOT          : 'data/DataSet/Kvasir'                                   # dataset root path
   IGNORE_LABEL  : 127
 
@@ -36,7 +36,7 @@ SCHEDULER:
   
 
 EVAL:
-  MODEL_PATH    : 'output_kvasir_1/HyBrid_MSCANet_Kvasir.pth'     # trained model file path
+  MODEL_PATH    : 'output_kvasir_3/HyBrid_MSCANet_Mixed.pth'     # trained model file path
   IMAGE_SIZE    : [352, 352]                            # evaluation image size in (h, w)                       
   MSF: 
     ENABLE      : false                                   # multi-scale and flip evaluation  

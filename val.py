@@ -41,9 +41,6 @@ def evaluate(model, dataloader, device):
         # preds = torch.sigmoid(logits)
         preds = (preds > 0.5).float()
 
-        # _pred = preds.to(torch.uint8)
-        # _label = labels.to(torch.long)
-        # utils.save_image(_label, 'labels.png')
         save_path = save_preds + str(count) + "_pred.png" 
         save_label_path = save_labels + str(count) + "_label.png" 
         count += 1
@@ -52,11 +49,10 @@ def evaluate(model, dataloader, device):
 
         metrics.update(preds, labels)
     
-    ious, miou = metrics.compute_iou()
-    acc, macc = metrics.compute_pixel_acc()
-    f1, mf1 = metrics.compute_f1()
+    miou = metrics.compute_mean_iou()
+    mdice = metrics.compute_mean_dice()
     
-    return acc, macc, f1, mf1, ious, miou
+    return miou, mdice
 
 class PolypDB(Dataset):
     def __init__(self, root: str, transform = None) -> None:
@@ -148,16 +144,14 @@ def main(cfg, dataloader, dataset, _dataset):
     model.load_state_dict(torch.load(str(model_path), map_location='cpu'))
     model = model.to(device)
 
-    acc, macc, dice, mdice, ious, miou = evaluate(model, dataloader, device)
+    miou, mdice = evaluate(model, dataloader, device)
 
     table = {
         'Class': list([
-        'background',
-        'polyp'
+        'Result',
     ]) + ['Mean'],
-        'IoU': ious + [miou],
-        'Dice': dice + [mdice],
-        'Acc': acc + [macc]
+        'IoU': [miou],
+        'Dice':  [mdice],
     }
 
     print(tabulate(table, headers='keys'))
@@ -174,5 +168,6 @@ if __name__ == '__main__':
     setup_cudnn()
     ds = ['CVC-300', 'CVC-ClinicDB', 'CVC-ColonDB', 'ETIS-LaribPolypDB', 'Kvasir']
     for _dataset in ds:
+        print(_dataset)
         dataloader, dataset = create_dataloaders('data/data/TestDataset/' + _dataset, 'val', [352, 352], 1)
         main(cfg, dataloader, dataset, _dataset)
