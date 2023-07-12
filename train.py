@@ -56,7 +56,7 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Number of parameters: {total_params}")
-    return
+
     optimizer = get_optimizer(model, optim_cfg['NAME'], lr, optim_cfg['WEIGHT_DECAY'])
     # scheduler = get_scheduler(sched_cfg['NAME'], optimizer, epochs * iters_per_epoch, sched_cfg['POWER'], iters_per_epoch * sched_cfg['WARMUP'], sched_cfg['WARMUP_RATIO'])
     writer = SummaryWriter(str(save_dir / 'logs'))
@@ -165,7 +165,7 @@ class PolypDB(Dataset):
 
     def __getitem__(self, index: int):
         img_path = str(self.files[index])
-        lbl_path = str(self.files[index]).replace('images', 'masks').replace('.png', '.png')
+        lbl_path = str(self.files[index]).replace('images', 'masks')
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -183,7 +183,7 @@ class PolypDB(Dataset):
         else:
             return image.float(), mask.argmax(dim=2).long()
 
-def create_dataloaders(dir, split, image_size, batch_size, num_workers=os.cpu_count()):
+def create_dataloaders(dir, image_size, batch_size, num_workers=os.cpu_count()):
     if isinstance(image_size, int):
         image_size = [image_size, image_size]
     
@@ -196,19 +196,11 @@ def create_dataloaders(dir, split, image_size, batch_size, num_workers=os.cpu_co
     ])
     
     dataset = PolypDB(root=dir, transform=transform)
-    if split == 'train':
-        dataloader = torch.utils.data.DataLoader(
+    dataloader = torch.utils.data.DataLoader(
             dataset,
             batch_size=batch_size,
             num_workers=num_workers,
             drop_last=True, 
-            pin_memory=True
-        )
-    else:
-        dataloader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=1,
-            num_workers=1, 
             pin_memory=True
         )
     
@@ -229,14 +221,14 @@ if __name__ == '__main__':
     save_dir = Path(cfg['SAVE_DIR'])
     save_dir.mkdir(exist_ok=True)
 
-    dataloader, dataset = create_dataloaders('data/data/TrainDataset', 'train', [352, 352], 4)
+    dataloader, dataset = create_dataloaders('data/data/TrainDataset', [352, 352], 4)
 
-    train_ratio = 0.8
-    val_ratio = 0.2
+    train_ratio = 0.9
+    val_ratio = 0.1
     num_samples = len(dataloader.dataset)
     num_train_samples = int(train_ratio * num_samples)
     num_val_samples = num_samples - num_train_samples
-    train_set, val_set = torch.utils.data.random_split(dataloader.dataset, [num_train_samples, num_val_samples])
+    train_set, val_set = torch.utils.data.random_split(dataset, [num_train_samples, num_val_samples])
     train_loader = DataLoader(train_set, batch_size=4 , shuffle=True)
     val_loader = DataLoader(val_set, batch_size=1, shuffle=False)   
     print(len(train_loader.dataset))
