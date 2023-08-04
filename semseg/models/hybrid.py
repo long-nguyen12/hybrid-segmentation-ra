@@ -5,6 +5,8 @@ from semseg.models.base import BaseModel
 from semseg.models.heads import SegFormerHead, HamDecoder
 from torch import nn
 import yaml, math, os
+from semseg.lib.context_module import CFPModule
+from semseg.lib.conv_layer import Conv
 with open('./semseg/models/config.yaml') as fh:
     config = yaml.load(fh, Loader=yaml.FullLoader)
 
@@ -75,7 +77,7 @@ class ChannelGate(nn.Module):
             else:
                 channel_att_sum = channel_att_sum + channel_att_raw
 
-        scale = F.sigmoid( channel_att_sum ).unsqueeze(2).unsqueeze(3).expand_as(x)
+        scale = torch.sigmoid( channel_att_sum ).unsqueeze(2).unsqueeze(3).expand_as(x)
         return x * scale
 
 def logsumexp_2d(tensor):
@@ -97,7 +99,7 @@ class SpatialGate(nn.Module):
     def forward(self, x):
         x_compress = self.compress(x)
         x_out = self.spatial(x_compress)
-        scale = F.sigmoid(x_out) # broadcasting
+        scale = torch.sigmoid(x_out) # broadcasting
         return x * scale
 
 class CBAM(nn.Module):
@@ -115,10 +117,10 @@ class CBAM(nn.Module):
     
 
 class HyBrid(BaseModel):
-    def __init__(self, backbone: str = 'MSCANet', num_classes: int = 1, channels = 512) -> None:
+    def __init__(self, backbone: str = 'PoolFormer', num_classes: int = 1, channels = 320) -> None:
         super().__init__(backbone, num_classes)
         # self.decode_head = HamDecoder(outChannels=channels, config=config)
-        self.decode_head = SegFormerHead(self.backbone.channels, channels, 1)
+        self.decode_head = SegFormerHead(self.backbone.channels, channels, num_classes)
         self.apply(self._init_weights)
 
         self.ra4_conv1 = BasicConv2d(512, 256, kernel_size=1)
@@ -127,10 +129,10 @@ class HyBrid(BaseModel):
         self.ra4_conv4 = BasicConv2d(256, 256, kernel_size=5, padding=2)
         self.ra4_conv5 = BasicConv2d(256, 1, kernel_size=1)
         # ---- reverse attention branch 3 ----
-        self.ra3_conv1 = BasicConv2d(320, 64, kernel_size=1)
-        self.ra3_conv2 = BasicConv2d(64, 64, kernel_size=3, padding=1)
-        self.ra3_conv3 = BasicConv2d(64, 64, kernel_size=3, padding=1)
-        self.ra3_conv4 = BasicConv2d(64, 1, kernel_size=3, padding=1)
+        self.ra3_conv1 = BasicConv2d(320, 160, kernel_size=1)
+        self.ra3_conv2 = BasicConv2d(160, 160, kernel_size=3, padding=1)
+        self.ra3_conv3 = BasicConv2d(160, 160, kernel_size=3, padding=1)
+        self.ra3_conv4 = BasicConv2d(160, 1, kernel_size=3, padding=1)
         # ---- reverse attention branch 2 ----
         self.ra2_conv1 = BasicConv2d(128, 64, kernel_size=1)
         self.ra2_conv2 = BasicConv2d(64, 64, kernel_size=3, padding=1)
@@ -146,6 +148,11 @@ class HyBrid(BaseModel):
         self.cbam2 = CBAM(gate_channels=128)
         self.cbam3 = CBAM(gate_channels=320)
         self.cbam4 = CBAM(gate_channels=512)
+
+        self.CFP_1 = CFPModule(64, d = 8)
+        self.CFP_2 = CFPModule(128, d = 8)
+        self.CFP_3 = CFPModule(320, d = 8)
+        self.CFP_4 = CFPModule(512, d = 8)
 
     def forward(self, x: Tensor) -> Tensor:
         x_size = x.size()[2:]
@@ -164,6 +171,7 @@ class HyBrid(BaseModel):
         x2_size = x2.size()[2:]
         x3_size = x3.size()[2:]
         x4_size = x4.size()[2:]
+
         # decode head
         y = self.decode_head([y1, y2, y3, y4])   # 4x reduction in image size
         y = F.interpolate(y, size=x.shape[2:], mode='bilinear', align_corners=True)    # to original image shape
@@ -171,8 +179,9 @@ class HyBrid(BaseModel):
 
         # compute 
         y5_4 = F.interpolate(y, size=x4_size, mode='bilinear', align_corners=True)
+        x_cfp_4 = self.CFP_4(x4)
         x = -1*(torch.sigmoid(y5_4)) + 1
-        x = x.expand(-1, 512, -1, -1).mul(x4)
+        x = x.expand(-1, 512, -1, -1).mul(x_cfp_4)
         x = self.ra4_conv1(x)
         x = F.relu(self.ra4_conv2(x))
         x = F.relu(self.ra4_conv3(x))
@@ -182,8 +191,9 @@ class HyBrid(BaseModel):
         score4 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
 
         y4_3 = F.interpolate(x, x3_size, mode='bilinear', align_corners=True)
+        x_cfp_3 = self.CFP_3(x3)
         x = -1*(torch.sigmoid(y4_3)) + 1
-        x = x.expand(-1, 320, -1, -1).mul(x3)
+        x = x.expand(-1, 320, -1, -1).mul(x_cfp_3)
         x = self.ra3_conv1(x)
         x = F.relu(self.ra3_conv2(x))
         x = F.relu(self.ra3_conv3(x))
@@ -192,8 +202,9 @@ class HyBrid(BaseModel):
         score3 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
 
         y3_2 = F.interpolate(x, x2_size, mode='bilinear', align_corners=True)
+        x_cfp_2 = self.CFP_2(x2)
         x = -1*(torch.sigmoid(y3_2)) + 1
-        x = x.expand(-1, 128, -1, -1).mul(x2)
+        x = x.expand(-1, 128, -1, -1).mul(x_cfp_2)
         x = self.ra2_conv1(x)
         x = F.relu(self.ra2_conv2(x))
         x = F.relu(self.ra2_conv3(x))
@@ -202,8 +213,9 @@ class HyBrid(BaseModel):
         score2 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
 
         y2_1 = F.interpolate(x, x1_size, mode='bilinear', align_corners=True)
+        x_cfp_1 = self.CFP_1(x1)
         x = -1*(torch.sigmoid(y2_1)) + 1
-        x = x.expand(-1, 64, -1, -1).mul(x1)
+        x = x.expand(-1, 64, -1, -1).mul(x_cfp_1)
         x = self.ra1_conv1(x)
         x = F.relu(self.ra1_conv2(x))
         x = F.relu(self.ra1_conv3(x))

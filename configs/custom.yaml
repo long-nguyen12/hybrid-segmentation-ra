@@ -1,20 +1,20 @@
 DEVICE          : cuda              # device used for training and evaluation (cpu, cuda, cuda0, cuda1, ...)
-SAVE_DIR        : 'output'         # output folder name used for saving the model, logs and inference results
+SAVE_DIR        : 'output_poolformer'         # output folder name used for saving the model, logs and inference results
 
 MODEL:                                    
-  NAME          : DDRNet                                           # name of the model you are using
-  BACKBONE      : DDRNet-23slim                                                 # model variant
-  PRETRAINED    : 'checkpoints/backbones/ddrnet/ddrnet_23slim.pth'              # backbone model's weight 
+  NAME          : HyBrid                                           # name of the model you are using
+  BACKBONE      : PoolFormer                                                      # model variant
+  PRETRAINED    : 'checkpoints/pretrained_weight.pth' 
 
 DATASET:
-  NAME          : CityScapes                                          # dataset name to be trained with (camvid, cityscapes, ade20k)
-  ROOT          : 'data/CityScapes'                                   # dataset root path
-  IGNORE_LABEL  : 255
+  NAME          : Mixed                                          # dataset name to be trained with (camvid, cityscapes, ade20k)
+  ROOT          : 'data/DataSet/Kvasir'                                   # dataset root path
+  IGNORE_LABEL  : 127
 
 TRAIN:
-  IMAGE_SIZE    : [512, 512]    # training image size in (h, w)
-  BATCH_SIZE    : 2               # batch size used to train
-  EPOCHS        : 100             # number of epochs to train
+  IMAGE_SIZE    : [352, 352]    # training image size in (h, w)
+  BATCH_SIZE    : 8               # batch size used to train
+  EPOCHS        : 201             # number of epochs to train
   EVAL_INTERVAL : 20              # evaluation interval during training
   AMP           : false           # use AMP in training
   DDP           : false           # use DDP training
@@ -25,7 +25,7 @@ LOSS:
 
 OPTIMIZER:
   NAME          : adamw           # optimizer name
-  LR            : 0.001           # initial learning rate used in optimizer
+  LR            : 0.0002           # initial learning rate used in optimizer
   WEIGHT_DECAY  : 0.01            # decay rate used in optimizer 
 
 SCHEDULER:
@@ -36,8 +36,8 @@ SCHEDULER:
   
 
 EVAL:
-  MODEL_PATH    : 'checkpoints/pretrained/ddrnet/ddrnet_23slim_city.pth'     # trained model file path
-  IMAGE_SIZE    : [1024, 1024]                            # evaluation image size in (h, w)                       
+  MODEL_PATH    : 'output_poolformer/HyBrid_PoolFormer_Mixed.pth'     # trained model file path
+  IMAGE_SIZE    : [352, 352]                            # evaluation image size in (h, w)                       
   MSF: 
     ENABLE      : false                                   # multi-scale and flip evaluation  
     FLIP        : true                                    # use flip in evaluation  
@@ -45,7 +45,7 @@ EVAL:
 
 
 TEST:
-  MODEL_PATH    : 'checkpoints/pretrained/ddrnet/ddrnet_23slim_city.pth'    # trained model file path
+  MODEL_PATH    : 'output_cvc/SegFormer_MiT-B0_CVC_ClinicDB.pth'    # trained model file path
   FILE          : 'assests/cityscapes'                    # filename or foldername 
-  IMAGE_SIZE    : [1024, 1024]                            # inference image size in (h, w)
+  IMAGE_SIZE    : [352, 352]                            # inference image size in (h, w)
   OVERLAY       : true                                    # save the overlay result (image_alpha+label_alpha)

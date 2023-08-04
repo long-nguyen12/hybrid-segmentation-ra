@@ -18,8 +18,8 @@ class HamDecoder(nn.Module):
         self.align = ConvRelu(ham_channels, 1)
        
     def forward(self, features):
-        # features = features[1:] # drop stage 1 features b/c low level
-        features = [resize(feature, size=features[0].shape[2:], mode='bilinear') for feature in features]
+        features = features[1:] # drop stage 1 features b/c low level
+        features = [resize(feature, size=features[-3].shape[2:], mode='bilinear') for feature in features]
         x = torch.cat(features, dim=1)
 
         x = self.squeeze(x)

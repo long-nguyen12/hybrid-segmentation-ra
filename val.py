@@ -18,13 +18,13 @@ import os
 from semseg.datasets.colondb import * 
 
 @torch.no_grad()
-def evaluate(model, dataloader, device):
+def evaluate(model, dataloader, device, folder):
     print('Evaluating...')
     model.eval()
     metrics = Metrics(2, -1, device)
 
-    save_preds = './result2/' + "/"
-    save_labels = './labels2/' + "/"
+    save_preds = './result2/' + "/" + folder + "/"
+    save_labels = './labels2/' + "/" + folder + "/"
 
     if not os.path.exists(save_labels):
         os.makedirs(save_labels)
@@ -144,7 +144,7 @@ def main(cfg, dataloader, dataset, _dataset):
     model.load_state_dict(torch.load(str(model_path), map_location='cpu'))
     model = model.to(device)
 
-    miou, mdice = evaluate(model, dataloader, device)
+    miou, mdice = evaluate(model, dataloader, device, _dataset)
 
     table = {
         'Class': list([
@@ -159,7 +159,7 @@ def main(cfg, dataloader, dataset, _dataset):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='configs/kvasir.yaml')
+    parser.add_argument('--cfg', type=str, default='configs/custom.yaml')
     args = parser.parse_args()
 
     with open(args.cfg) as f:

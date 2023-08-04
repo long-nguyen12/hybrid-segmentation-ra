@@ -50,31 +50,29 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
     epochs, lr = train_cfg['EPOCHS'], optim_cfg['LR']
 
     model = eval(model_cfg['NAME'])(model_cfg['BACKBONE'], 2)
-    
     # model.init_pretrained(model_cfg['PRETRAINED'])
-
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Number of parameters: {total_params}")
-
-    optimizer = get_optimizer(model, optim_cfg['NAME'], lr, optim_cfg['WEIGHT_DECAY'])
-    # scheduler = get_scheduler(sched_cfg['NAME'], optimizer, epochs * iters_per_epoch, sched_cfg['POWER'], iters_per_epoch * sched_cfg['WARMUP'], sched_cfg['WARMUP_RATIO'])
+    
     writer = SummaryWriter(str(save_dir / 'logs'))
     loss_record = AvgMeter()
     size_rates = [0.75, 1, 1.25]
 
     # cross-validation
-    k = 5
-    kfold = KFold(n_splits=k, shuffle=True)
-
+    # k = 5
+    # kfold = KFold(n_splits=k, shuffle=True)
     # for fold, (train_indices, _) in enumerate(kfold.split(train_loader.dataset)):
     #     print(f"Fold {fold+1}/{k}")
     #     train_subset = Subset(train_loader.dataset, train_indices)
         
     #     trainloader = DataLoader(train_subset, batch_size=4, shuffle=True)
-        
-    iters_per_epoch = len(train_loader.dataset) // train_cfg['BATCH_SIZE']
+    iters_per_epoch = len(train_loader.dataset) // 8
 
+    optimizer = get_optimizer(model, optim_cfg['NAME'], lr, optim_cfg['WEIGHT_DECAY'])
+    scheduler = get_scheduler(sched_cfg['NAME'], optimizer, epochs * iters_per_epoch, sched_cfg['POWER'], iters_per_epoch * sched_cfg['WARMUP'], sched_cfg['WARMUP_RATIO'])
+
+   
     for epoch in range(epochs):
         model.train()
         
@@ -104,12 +102,12 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
                 loss = loss_0 + loss_2 + loss_3 + loss_4 + loss_1
                 
                 loss.backward()
-                clip_gradient(optimizer, 0.5)
-                optimizer.step()
-                # pbar.set_description(f"Epoch: [{epoch+1}/{epochs}] Iter: [{iter+1}/{iters_per_epoch}] LR: {lr:.8f} Loss: {train_loss / (iter+1):.8f}")
+
                 if rate == 1:
                     loss_record.update(loss.data, train_cfg['BATCH_SIZE'])
+                # loss_record.update(loss.data, train_cfg['BATCH_SIZE'])
 
+                optimizer.step()
 
             if iter % 50 == 0 or iter == iters_per_epoch:
                 print('{} Epoch [{:03d}/{:03d}], Step [{:03d}/{:03d}], '
@@ -117,17 +115,17 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
                     format(datetime.now(), epoch, epochs, iter, iters_per_epoch,
                             loss_record.show(), optimizer.param_groups[0]['lr']))
 
-            # scheduler.step()
-            torch.cuda.synchronize()
+        # if (epoch + 1) >= 10 and (epoch + 1) % 5 == 0:
+        #     for param_group in optimizer.param_groups:
+        #         param_group['lr'] *= 0.1
 
-        if (epoch + 1) >= 10 and (epoch + 1) % 5 == 0:
-            for param_group in optimizer.param_groups:
-                param_group['lr'] *= 0.1
-
-        torch.cuda.empty_cache()
+            scheduler.step()
+            lr = scheduler.get_lr()
+            lr = sum(lr) / len(lr)
+            torch.cuda.empty_cache()
         
         if (epoch+1) % train_cfg['EVAL_INTERVAL'] == 0 or (epoch+1) == epochs:
-            miou = evaluate(model, val_loader, device)[0]
+            miou = evaluate(model, val_loader, device, "Training")[0]
             
             if miou > best_mIoU:
                 best_mIoU = miou
@@ -209,7 +207,7 @@ def create_dataloaders(dir, image_size, batch_size, num_workers=os.cpu_count()):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='configs/kvasir.yaml', help='Configuration file to use')
+    parser.add_argument('--cfg', type=str, default='configs/custom.yaml', help='Configuration file to use')
     args = parser.parse_args()
 
     with open(args.cfg) as f:
@@ -221,7 +219,7 @@ if __name__ == '__main__':
     save_dir = Path(cfg['SAVE_DIR'])
     save_dir.mkdir(exist_ok=True)
 
-    dataloader, dataset = create_dataloaders('data/data/TrainDataset', [352, 352], 4)
+    dataloader, dataset = create_dataloaders('data/data/TrainDataset/', [352, 352], 8)
 
     train_ratio = 0.9
     val_ratio = 0.1
@@ -229,8 +227,13 @@ if __name__ == '__main__':
     num_train_samples = int(train_ratio * num_samples)
     num_val_samples = num_samples - num_train_samples
     train_set, val_set = torch.utils.data.random_split(dataset, [num_train_samples, num_val_samples])
-    train_loader = DataLoader(train_set, batch_size=4 , shuffle=True)
+
+    # sub_samples = len(train_set.dataset)
+    # sub_train_samples = int(0.1 * sub_samples)
+    # sub_set, left_set = torch.utils.data.random_split(dataset, [sub_train_samples, sub_samples - sub_train_samples])
+
+    train_loader = DataLoader(train_set, batch_size=8, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=1, shuffle=False)   
-    print(len(train_loader.dataset))
+
     main(cfg, gpu, save_dir, train_loader, val_loader)
     cleanup_ddp()
