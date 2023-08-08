@@ -44,6 +44,6 @@ class BaseModel(nn.Module):
             nn.init.zeros_(m.bias)
 
     def init_pretrained(self, pretrained: str = None) -> None:
-        print(pretrained)
         if pretrained:
+            print(pretrained)
             self.backbone.load_state_dict(torch.load(pretrained, map_location='cpu'), strict=False)

@@ -27,6 +27,8 @@ from datetime import datetime
 from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import KFold
 
+batch_size = 8
+
 def structure_loss(pred, mask):
     # mask = mask.float()  # Convert mask tensor to float type
     # mask = mask.unsqueeze(1)  # Expand dimensions along the second axis
@@ -50,7 +52,7 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
     epochs, lr = train_cfg['EPOCHS'], optim_cfg['LR']
 
     model = eval(model_cfg['NAME'])(model_cfg['BACKBONE'], 2)
-    # model.init_pretrained(model_cfg['PRETRAINED'])
+    model.init_pretrained(model_cfg['PRETRAINED'])
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Number of parameters: {total_params}")
@@ -59,15 +61,7 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
     loss_record = AvgMeter()
     size_rates = [0.75, 1, 1.25]
 
-    # cross-validation
-    # k = 5
-    # kfold = KFold(n_splits=k, shuffle=True)
-    # for fold, (train_indices, _) in enumerate(kfold.split(train_loader.dataset)):
-    #     print(f"Fold {fold+1}/{k}")
-    #     train_subset = Subset(train_loader.dataset, train_indices)
-        
-    #     trainloader = DataLoader(train_subset, batch_size=4, shuffle=True)
-    iters_per_epoch = len(train_loader.dataset) // 8
+    iters_per_epoch = len(train_loader.dataset) // batch_size
 
     optimizer = get_optimizer(model, optim_cfg['NAME'], lr, optim_cfg['WEIGHT_DECAY'])
     scheduler = get_scheduler(sched_cfg['NAME'], optimizer, epochs * iters_per_epoch, sched_cfg['POWER'], iters_per_epoch * sched_cfg['WARMUP'], sched_cfg['WARMUP_RATIO'])
@@ -89,9 +83,6 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
                         lbl = lbl.unsqueeze(1).float()
                     img = F.interpolate(img, size=(trainsize, trainsize), mode='bilinear', align_corners=True)
                     lbl = F.interpolate(lbl, size=(trainsize, trainsize), mode='bilinear', align_corners=True)
-                
-                # logits = model(img)
-                # loss = structure_loss(logits, lbl)
 
                 logits, score4, score3, score2, score1 = model(img)
                 loss_0 = structure_loss(logits, lbl)
@@ -130,6 +121,8 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
             if miou > best_mIoU:
                 best_mIoU = miou
                 torch.save(model.state_dict(), save_dir / f"{model_cfg['NAME']}_{model_cfg['BACKBONE']}_{dataset_cfg['NAME']}.pth")
+            torch.save(model.state_dict(), save_dir / "checkpoint{:.5f}.pth".format(miou))
+
             print(f"Current mIoU: {miou} Best mIoU: {best_mIoU}")
                 
         writer.close()
@@ -219,10 +212,10 @@ if __name__ == '__main__':
     save_dir = Path(cfg['SAVE_DIR'])
     save_dir.mkdir(exist_ok=True)
 
-    dataloader, dataset = create_dataloaders('data/data/TrainDataset/', [352, 352], 8)
+    dataloader, dataset = create_dataloaders('data/data/TrainDataset/', [352, 352], batch_size)
 
-    train_ratio = 0.9
-    val_ratio = 0.1
+    train_ratio = 0.8
+    val_ratio = 0.2
     num_samples = len(dataloader.dataset)
     num_train_samples = int(train_ratio * num_samples)
     num_val_samples = num_samples - num_train_samples
@@ -232,7 +225,7 @@ if __name__ == '__main__':
     # sub_train_samples = int(0.1 * sub_samples)
     # sub_set, left_set = torch.utils.data.random_split(dataset, [sub_train_samples, sub_samples - sub_train_samples])
 
-    train_loader = DataLoader(train_set, batch_size=8, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=1, shuffle=False)   
 
     main(cfg, gpu, save_dir, train_loader, val_loader)

@@ -143,7 +143,8 @@ def main(cfg, dataloader, dataset, _dataset):
     model = eval(cfg['MODEL']['NAME'])(cfg['MODEL']['BACKBONE'], 2)
     model.load_state_dict(torch.load(str(model_path), map_location='cpu'))
     model = model.to(device)
-
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Number of parameters: {total_params}")
     miou, mdice = evaluate(model, dataloader, device, _dataset)
 
     table = {
@@ -156,6 +157,8 @@ def main(cfg, dataloader, dataset, _dataset):
 
     print(tabulate(table, headers='keys'))
 
+    return miou, mdice
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -167,7 +170,16 @@ if __name__ == '__main__':
 
     setup_cudnn()
     ds = ['CVC-300', 'CVC-ClinicDB', 'CVC-ColonDB', 'ETIS-LaribPolypDB', 'Kvasir']
+
     for _dataset in ds:
+        ious = []
+        dices = []
         print(_dataset)
         dataloader, dataset = create_dataloaders('data/data/TestDataset/' + _dataset, 'val', [352, 352], 1)
-        main(cfg, dataloader, dataset, _dataset)
+        for i in range(5):
+            iou, dice = main(cfg, dataloader, dataset, _dataset)
+            ious.append(iou)
+            dices.append(dice)
+        ious = np.array(ious)
+        dices = np.array(dices)
+        print(f'Mean IoU: {np.mean(ious)}, mean Dice: {np.mean(dices)}')
