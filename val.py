@@ -138,7 +138,7 @@ def main(cfg, dataloader, dataset, _dataset):
 
     model_path = Path(eval_cfg['MODEL_PATH'])
     if not model_path.exists(): model_path = Path(cfg['SAVE_DIR']) / f"{cfg['MODEL']['NAME']}_{cfg['MODEL']['BACKBONE']}_{cfg['DATASET']['NAME']}.pth"
-    print(f"Evaluating {model_path}...")
+    # print(f"Evaluating {model_path}...")
 
     model = eval(cfg['MODEL']['NAME'])(cfg['MODEL']['BACKBONE'], 2)
     model.load_state_dict(torch.load(str(model_path), map_location='cpu'))
@@ -147,15 +147,15 @@ def main(cfg, dataloader, dataset, _dataset):
     print(f"Number of parameters: {total_params}")
     miou, mdice = evaluate(model, dataloader, device, _dataset)
 
-    table = {
-        'Class': list([
-        'Result',
-    ]) + ['Mean'],
-        'IoU': [miou],
-        'Dice':  [mdice],
-    }
+    # table = {
+    #     'Class': list([
+    #     'Result',
+    # ]) + ['Mean'],
+    #     'IoU': [miou],
+    #     'Dice':  [mdice],
+    # }
 
-    print(tabulate(table, headers='keys'))
+    # print(tabulate(table, headers='keys'))
 
     return miou, mdice
 

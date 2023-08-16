@@ -1,7 +1,7 @@
 import torch
 from torch import nn, Tensor
 from semseg.models.layers import DropPath
-
+from semseg.lib.cbam import CBAM
 
 class PatchEmbed(nn.Module):
     """Image to Patch Embedding with overlapping
@@ -55,7 +55,7 @@ class PoolFormerBlock(nn.Module):
 
 poolformer_settings = {
     'S24': [[4, 4, 12, 4], [64, 128, 320, 512], 0.1],       # [layers, embed_dims, drop_path_rate]
-    'S36': [[6, 6, 18, 6], [64, 128, 320, 512], 0.2],
+    'S36': [[6, 6, 4, 4], [64, 128, 320, 512], 0.2],
     'M36': [[6, 6, 18, 6], [96, 192, 384, 768], 0.3]
 }
 

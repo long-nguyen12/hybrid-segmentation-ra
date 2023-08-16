@@ -117,7 +117,7 @@ def resize(input,
            size=None,
            scale_factor=None,
            mode='bilinear',
-           align_corners=None,
+           align_corners=False,
            warning=True):
 
     return F.interpolate(input, size, scale_factor, mode, align_corners)

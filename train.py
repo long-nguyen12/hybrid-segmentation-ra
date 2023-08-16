@@ -56,7 +56,7 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Number of parameters: {total_params}")
-    
+
     writer = SummaryWriter(str(save_dir / 'logs'))
     loss_record = AvgMeter()
     size_rates = [0.75, 1, 1.25]
@@ -69,8 +69,10 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
    
     for epoch in range(epochs):
         model.train()
-        
-        for iter, (img, lbl) in enumerate(train_loader, start=1):
+        train_loss = 0.0
+        pbar = tqdm(enumerate(train_loader), total=iters_per_epoch, desc=f"Epoch: [{epoch+1}/{epochs}] Iter: [{0}/{iters_per_epoch}] LR: {lr:.8f} Loss: {train_loss:.8f}")
+
+        for iter, (img, lbl) in pbar:
             for rate in size_rates:
                 optimizer.zero_grad(set_to_none=True)
                 
@@ -100,11 +102,11 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
 
                 optimizer.step()
 
-            if iter % 50 == 0 or iter == iters_per_epoch:
-                print('{} Epoch [{:03d}/{:03d}], Step [{:03d}/{:03d}], '
-                    '[loss: {:.4f}], [lr: {:.9f}]'.
-                    format(datetime.now(), epoch, epochs, iter, iters_per_epoch,
-                            loss_record.show(), optimizer.param_groups[0]['lr']))
+            # if iter % 50 == 0 or iter == iters_per_epoch:
+            #     print('{} Epoch [{:03d}/{:03d}], Step [{:03d}/{:03d}], '
+            #         '[loss: {:.4f}], [lr: {:.9f}]'.
+            #         format(datetime.now(), epoch, epochs, iter, iters_per_epoch,
+            #                 loss_record.show(), optimizer.param_groups[0]['lr']))
 
         # if (epoch + 1) >= 10 and (epoch + 1) % 5 == 0:
         #     for param_group in optimizer.param_groups:
@@ -113,21 +115,28 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
             scheduler.step()
             lr = scheduler.get_lr()
             lr = sum(lr) / len(lr)
-            torch.cuda.empty_cache()
-        
+            train_loss += loss.data
+
+            pbar.set_description(f"Epoch: [{epoch+1}/{epochs}] Iter: [{iter+1}/{iters_per_epoch}] LR: {lr:.8f} Loss: {train_loss / (iter+1):.8f}")
+
+        train_loss /= iter+1
+        writer.add_scalar('train/loss', train_loss, epoch)
+        torch.cuda.empty_cache()
+            
         if (epoch+1) % train_cfg['EVAL_INTERVAL'] == 0 or (epoch+1) == epochs:
             miou = evaluate(model, val_loader, device, "Training")[0]
             
             if miou > best_mIoU:
                 best_mIoU = miou
-                torch.save(model.state_dict(), save_dir / f"{model_cfg['NAME']}_{model_cfg['BACKBONE']}_{dataset_cfg['NAME']}.pth")
-            torch.save(model.state_dict(), save_dir / "checkpoint{:.5f}.pth".format(miou))
+                torch.save(model.state_dict(), save_dir / "best.pth")
+            torch.save(model.state_dict(), save_dir / f"checkpoint{epoch+1}.pth")
 
             print(f"Current mIoU: {miou} Best mIoU: {best_mIoU}")
-                
-        writer.close()
+        
+    writer.close()
+    pbar.close()
     end = time.gmtime(time.time() - start)
-    print(end)
+    print(time.strftime("%H:%M:%S", end))
 
 class PolypDB(Dataset):
     def __init__(self, root: str, transform = None) -> None:

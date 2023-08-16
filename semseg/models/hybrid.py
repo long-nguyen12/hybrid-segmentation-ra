@@ -119,8 +119,8 @@ class CBAM(nn.Module):
 class HyBrid(BaseModel):
     def __init__(self, backbone: str = 'PoolFormer', num_classes: int = 1, channels = 320) -> None:
         super().__init__(backbone, num_classes)
-        # self.decode_head = HamDecoder(outChannels=channels, config=config)
-        self.decode_head = SegFormerHead(self.backbone.channels, channels, num_classes)
+        self.decode_head = HamDecoder(outChannels=num_classes)
+        # self.decode_head = SegFormerHead(self.backbone.channels, channels, num_classes)
         self.apply(self._init_weights)
 
         self.ra4_conv1 = BasicConv2d(512, 256, kernel_size=1)

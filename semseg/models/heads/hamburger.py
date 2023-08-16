@@ -42,17 +42,17 @@ class _MatrixDecomposition2DBase(nn.Module):
         self.eta = config['Eta']
 
         self.rand_init = config['RAND_INIT']
-        print(30*'=')
-        print('spatial: ', self.spatial)
-        print('S: ', self.S)
-        print('D: ', self.D)
-        print('R: ', self.R)
-        print('train_steps: ', self.train_steps)
-        print('eval_steps: ', self.eval_steps)
-        print('inv_t: ', self.inv_t)
-        print('eta: ', self.eta)
-        print('rand_init: ', self.rand_init)
-        print(30*'=')
+        # print(30*'=')
+        # print('spatial: ', self.spatial)
+        # print('S: ', self.S)
+        # print('D: ', self.D)
+        # print('R: ', self.R)
+        # print('train_steps: ', self.train_steps)
+        # print('eval_steps: ', self.eval_steps)
+        # print('inv_t: ', self.inv_t)
+        # print('eta: ', self.eta)
+        # print('rand_init: ', self.rand_init)
+        # print(30*'=')
 
     def _bild_bases(self, B,S,D,R):
         raise NotImplementedError
