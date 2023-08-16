@@ -30,8 +30,6 @@ from sklearn.model_selection import KFold
 batch_size = 8
 
 def structure_loss(pred, mask):
-    # mask = mask.float()  # Convert mask tensor to float type
-    # mask = mask.unsqueeze(1)  # Expand dimensions along the second axis
     weit = 1 + 5*torch.abs(F.avg_pool2d(mask, kernel_size=31, stride=1, padding=15) - mask)
     wbce = F.binary_cross_entropy_with_logits(pred, mask, reduction='none')
     wbce = (weit*wbce).sum(dim=(2, 3)) / weit.sum(dim=(2, 3))
