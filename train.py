@@ -53,7 +53,7 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
     model.init_pretrained(model_cfg['PRETRAINED'])
     model = model.to(device)
     total_params = sum(p.numel() for p in model.parameters())
-    print(f"Number of parameters: {total_params}")
+    print(f"Number of parameters {model_cfg['NAME']}: {total_params}")
 
     writer = SummaryWriter(str(save_dir / 'logs'))
     loss_record = AvgMeter()

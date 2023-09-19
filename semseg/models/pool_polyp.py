@@ -6,7 +6,7 @@ from semseg.models.heads import SegFormerHead, HamDecoder
 from torch import nn
 import yaml, math, os
 from semseg.lib.context_module import CFPModule
-from semseg.lib.mlp_module import MLPModule
+from semseg.lib.mlp_module import MLPModule, PoolModule
 from semseg.lib.d_block import DBlock
 
 with open('./semseg/models/config.yaml') as fh:
@@ -118,7 +118,7 @@ class CBAM(nn.Module):
         return x_out
     
 
-class HyBrid(BaseModel):
+class PoolPolyp(BaseModel):
     def __init__(self, backbone: str = 'PoolFormer', num_classes: int = 1, channels = 320) -> None:
         super().__init__(backbone, num_classes)
         self.decode_head = HamDecoder(outChannels=num_classes)
@@ -146,25 +146,30 @@ class HyBrid(BaseModel):
         self.ra1_conv3 = BasicConv2d(64, 64, kernel_size=3, padding=1)
         self.ra1_conv4 = BasicConv2d(64, 1, kernel_size=3, padding=1)
 
-        # self.cbam1 = CBAM(gate_channels=64)
-        # self.cbam2 = CBAM(gate_channels=128)
-        # self.cbam3 = CBAM(gate_channels=320)
-        # self.cbam4 = CBAM(gate_channels=512)
+        self.cbam1 = CBAM(gate_channels=64)
+        self.cbam2 = CBAM(gate_channels=128)
+        self.cbam3 = CBAM(gate_channels=320)
+        self.cbam4 = CBAM(gate_channels=512)
 
         self.CFP_1 = CFPModule(64, d = 8)
         self.CFP_2 = CFPModule(128, d = 8)
         self.CFP_3 = CFPModule(320, d = 8)
         self.CFP_4 = CFPModule(512, d = 8)
 
-        self.CFP_1 = DBlock(in_channels=64, out_channels=64)
-        self.CFP_2 = DBlock(in_channels=128, out_channels=128)
-        self.CFP_3 = DBlock(in_channels=320, out_channels=320)
-        self.CFP_4 = DBlock(in_channels=512, out_channels=512)
+        # self.CFP_1 = DBlock(in_channels=64, out_channels=64)
+        # self.CFP_2 = DBlock(in_channels=128, out_channels=128)
+        # self.CFP_3 = DBlock(in_channels=320, out_channels=320)
+        # self.CFP_4 = DBlock(in_channels=512, out_channels=512)
 
-        self.MLP_1 = MLPModule(64, 32)
-        self.MLP_2 = MLPModule(128, 64)
-        self.MLP_3 = MLPModule(320, 160)
-        self.MLP_4 = MLPModule(512, 256)
+        # self.MLP_1 = MLPModule(64, 32)
+        # self.MLP_2 = MLPModule(128, 64)
+        # self.MLP_3 = MLPModule(320, 160)
+        # self.MLP_4 = MLPModule(512, 256)
+
+        self.MLP_1 = PoolModule(64)
+        self.MLP_2 = PoolModule(128)
+        self.MLP_3 = PoolModule(320)
+        self.MLP_4 = PoolModule(512)
 
     def forward(self, x: Tensor) -> Tensor:
         x_size = x.size()[2:]
