@@ -12,7 +12,7 @@ class HamDecoder(nn.Module):
     '''SegNext'''
     def __init__(self, outChannels, enc_embed_dims=[64,128,320,512]):
         super().__init__()
-        print("Ham Decoder")
+        print(f"Ham Decoder {enc_embed_dims}")
         ham_channels = config['ham_channels']
         self.squeeze = ConvRelu(sum(enc_embed_dims[0:]), ham_channels)
         self.ham_attn = HamBurger(ham_channels, config)
@@ -20,7 +20,7 @@ class HamDecoder(nn.Module):
        
     def forward(self, features):
         # features = features[1:] # drop stage 1 features b/c low level
-        features = [resize(feature, size=features[0].shape[2:], mode='bilinear') for feature in features]
+        features = [resize(feature, size=features[0].shape[2:], mode='bicubic') for feature in features]
         x = torch.cat(features, dim=1)
 
         x = self.squeeze(x)

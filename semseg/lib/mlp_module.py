@@ -41,8 +41,8 @@ class PoolModule(nn.Module):
     def __init__(self, dim, pool_size=3, dpr=0., layer_scale_init_value=1e-5):
         super().__init__()
         self.norm1 = nn.GroupNorm(1, dim)
-        # self.token_mixer = Pooling(pool_size)
-        self.token_mixer =  nn.Conv2d(in_channels=dim, out_channels=dim, kernel_size=3, stride=1, padding=1, groups=dim)
+        self.token_mixer = Pooling(pool_size)
+        # self.token_mixer =  nn.Conv2d(in_channels=dim, out_channels=dim, kernel_size=3, stride=1, padding=1, groups=dim)
         self.norm2 = nn.GroupNorm(1, dim)
         self.drop_path = DropPath(dpr) if dpr > 0. else nn.Identity()
         

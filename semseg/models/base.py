@@ -14,18 +14,7 @@ class BaseModel(nn.Module):
         else:
             # self.backbone = eval(backbone)(in_channnels=3, embed_dims=[64, 128, 320, 512],
             #      ffn_ratios=[8, 8, 4, 4], depths=[3, 5, 27, 3], num_stages=4,
-            #      ls_init_val=1e-2, drop_path=0.0)
-            # self.backbone = eval(backbone)(in_channnels=3, embed_dims=[32, 64, 160, 256],
-            #      ffn_ratios=[8, 8, 4, 4], depths=[3, 3, 5, 2], num_stages=4,
-            #      ls_init_val=1e-2, drop_path=0.0)
-            # self.backbone = eval(backbone)(in_channnels=3, embed_dims=[64, 128, 320, 512],
-            #      ffn_ratios=[8, 8, 4, 4], depths=[3, 3, 12, 3], num_stages=4,
-            #      ls_init_val=1e-2, drop_path=0.0)
-            # self.backbone = eval(backbone)(in_channnels=3, embed_dims=[64, 128, 320, 320],
-            #      ffn_ratios=[8, 8, 4, 4], depths=[3, 5, 27, 3], num_stages=4,
-            #      ls_init_val=1e-2, drop_path=0.0)
-            self.backbone = eval(backbone)('S36')
-            # self.backbone = eval(backbone)('B')
+            self.backbone = eval(backbone)('Base')
             self.backbone.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:

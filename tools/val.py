@@ -48,17 +48,17 @@ def evaluate_msf(model, dataloader, device, scales, flip):
         for scale in scales:
             new_H, new_W = int(scale * H), int(scale * W)
             new_H, new_W = int(math.ceil(new_H / 32)) * 32, int(math.ceil(new_W / 32)) * 32
-            scaled_images = F.interpolate(images, size=(new_H, new_W), mode='bilinear', align_corners=True)
+            scaled_images = F.interpolate(images, size=(new_H, new_W), mode='bicubic', align_corners=True)
             scaled_images = scaled_images.to(device)
             logits = model(scaled_images)
-            logits = F.interpolate(logits, size=(H, W), mode='bilinear', align_corners=True)
+            logits = F.interpolate(logits, size=(H, W), mode='bicubic', align_corners=True)
             scaled_logits += logits.softmax(dim=1)
 
             if flip:
                 scaled_images = torch.flip(scaled_images, dims=(3,))
                 logits = model(scaled_images)
                 logits = torch.flip(logits, dims=(3,))
-                logits = F.interpolate(logits, size=(H, W), mode='bilinear', align_corners=True)
+                logits = F.interpolate(logits, size=(H, W), mode='bicubic', align_corners=True)
                 scaled_logits += logits.softmax(dim=1)
 
         metrics.update(scaled_logits, labels)

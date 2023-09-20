@@ -186,11 +186,11 @@ class HyBrid(BaseModel):
 
         # decode head
         y = self.decode_head([y1, y2, y3, y4])   # 4x reduction in image size
-        y = F.interpolate(y, size=x.shape[2:], mode='bilinear', align_corners=True)    # to original image shape
+        y = F.interpolate(y, size=x.shape[2:], mode='bicubic', align_corners=True)    # to original image shape
         # return y
 
         # compute 
-        y5_4 = F.interpolate(y, size=x4_size, mode='bilinear', align_corners=True)
+        y5_4 = F.interpolate(y, size=x4_size, mode='bicubic', align_corners=True)
         x_cfp_4 = self.CFP_4(x4)
         x = -1*(torch.sigmoid(y5_4)) + 1
         x_mlp_4 = self.MLP_4(x_cfp_4)
@@ -201,9 +201,9 @@ class HyBrid(BaseModel):
         x = F.relu(self.ra4_conv4(x))
         ra4_feat = self.ra4_conv5(x)
         x = ra4_feat + y5_4
-        score4 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
+        score4 = F.interpolate(x, x_size, mode='bicubic', align_corners=True)
 
-        y4_3 = F.interpolate(x, x3_size, mode='bilinear', align_corners=True)
+        y4_3 = F.interpolate(x, x3_size, mode='bicubic', align_corners=True)
         x_cfp_3 = self.CFP_3(x3)
         x = -1*(torch.sigmoid(y4_3)) + 1
         x_mlp_3 = self.MLP_3(x_cfp_3)
@@ -213,9 +213,9 @@ class HyBrid(BaseModel):
         x = F.relu(self.ra3_conv3(x))
         ra3_feat = self.ra3_conv4(x)
         x = ra3_feat + y4_3
-        score3 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
+        score3 = F.interpolate(x, x_size, mode='bicubic', align_corners=True)
 
-        y3_2 = F.interpolate(x, x2_size, mode='bilinear', align_corners=True)
+        y3_2 = F.interpolate(x, x2_size, mode='bicubic', align_corners=True)
         x_cfp_2 = self.CFP_2(x2)
         x = -1*(torch.sigmoid(y3_2)) + 1
         x_mlp_2 = self.MLP_2(x_cfp_2)
@@ -225,9 +225,9 @@ class HyBrid(BaseModel):
         x = F.relu(self.ra2_conv3(x))
         ra2_feat = self.ra2_conv4(x)
         x = ra2_feat + y3_2
-        score2 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
+        score2 = F.interpolate(x, x_size, mode='bicubic', align_corners=True)
 
-        y2_1 = F.interpolate(x, x1_size, mode='bilinear', align_corners=True)
+        y2_1 = F.interpolate(x, x1_size, mode='bicubic', align_corners=True)
         x_cfp_1 = self.CFP_1(x1)
         x = -1*(torch.sigmoid(y2_1)) + 1
         x_mlp_1 = self.MLP_1(x_cfp_1)
@@ -237,6 +237,6 @@ class HyBrid(BaseModel):
         x = F.relu(self.ra1_conv3(x))
         ra1_feat = self.ra1_conv4(x)
         x = ra1_feat + y2_1
-        score1 = F.interpolate(x, x_size, mode='bilinear', align_corners=True)
+        score1 = F.interpolate(x, x_size, mode='bicubic', align_corners=True)
 
         return y, score4, score3, score2, score1

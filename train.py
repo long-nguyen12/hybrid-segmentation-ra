@@ -27,7 +27,7 @@ from datetime import datetime
 from torch.utils.data import DataLoader, Subset
 from sklearn.model_selection import KFold
 
-batch_size = 8
+batch_size = 4
 
 def structure_loss(pred, mask):
     weit = 1 + 5*torch.abs(F.avg_pool2d(mask, kernel_size=31, stride=1, padding=15) - mask)
@@ -81,8 +81,8 @@ def main(cfg, gpu, save_dir, train_loader, val_loader):
                 if rate != 1:
                     if lbl.shape[1] != 1:
                         lbl = lbl.unsqueeze(1).float()
-                    img = F.interpolate(img, size=(trainsize, trainsize), mode='bilinear', align_corners=True)
-                    lbl = F.interpolate(lbl, size=(trainsize, trainsize), mode='bilinear', align_corners=True)
+                    img = F.interpolate(img, size=(trainsize, trainsize), mode='bicubic', align_corners=True)
+                    lbl = F.interpolate(lbl, size=(trainsize, trainsize), mode='bicubic', align_corners=True)
 
                 logits, score4, score3, score2, score1 = model(img)
                 loss_0 = structure_loss(logits, lbl)

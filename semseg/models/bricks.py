@@ -116,7 +116,7 @@ class StochasticDepth(nn.Module):
 def resize(input,
            size=None,
            scale_factor=None,
-           mode='bilinear',
+           mode='bicubic',
            align_corners=False,
            warning=True):
 
