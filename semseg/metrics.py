@@ -189,6 +189,12 @@ def calc_DSC_CM(truth, pred, class_id):
         dice = 0.0
     return dice
 
+def calc_F1_Score(tp, fp, fn):
+    precision = tp / (tp + fp + 1e-7)
+    recall = tp / (tp + fn + 1e-7)
+    f1_score = 2 * (precision * recall) / (precision + recall + 1e-7)
+    return f1_score, precision, recall
+
 class Metrics:
     def __init__(self, num_classes: int, ignore_label: int, device):
         self.num_classes = num_classes
@@ -223,6 +229,7 @@ class Metrics:
             dice[class_id] = 2 * self.tp[class_id] / (2 * self.tp[class_id] + self.fp[class_id] + self.fn[class_id] + 1e-7)
         return dice
 
+
     def compute_mean_iou(self):
         iou = self.compute_iou()
         mean_iou = np.mean(iou)
@@ -232,3 +239,40 @@ class Metrics:
         dice = self.compute_dice()
         mean_dice = np.mean(dice)
         return mean_dice
+    
+    def compute_f1_score(self):
+        f1_scores = [0] * self.num_classes
+        precisions = [0] * self.num_classes
+        recalls = [0] * self.num_classes
+        for i in range(self.num_classes):
+            f1_scores[i], precisions[i], recalls[i] = calc_F1_Score(self.tp[i], self.fp[i], self.fn[i])
+        return f1_scores, precisions, recalls
+
+    def compute_mean_f1_score(self):
+        f1_scores, precisions, recalls = self.compute_f1_score()
+        mean_precision = np.mean(precisions)
+        mean_recall = np.mean(recalls)
+        mean_f1_score = np.mean(f1_scores)
+        return mean_f1_score, mean_precision, mean_recall
+
+    def compute_single_iou(self, label, pred):
+        tps = [0] * self.num_classes
+        tns = [0] * self.num_classes
+        fps = [0] * self.num_classes
+        fns = [0] * self.num_classes
+        pred = pred.flatten().cpu().numpy()
+        label = label.flatten().cpu().numpy()
+
+        for class_id in range(self.num_classes):
+            tp, tn, fp, fn = calc_ConfusionMatrix(label, pred, class_id)
+            tps[class_id] += tp
+            tns[class_id] += tn
+            fps[class_id] += fp
+            fns[class_id] += fn
+        iou = [0] * self.num_classes
+        for class_id in range(self.num_classes):
+            iou[class_id] = tps[class_id] / (tps[class_id] + fps[class_id] + fns[class_id] + 1e-7)
+        return np.mean(iou)
+
+
+

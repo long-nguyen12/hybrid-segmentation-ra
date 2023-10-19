@@ -6,6 +6,8 @@ from semseg.datasets.colondb import *
 from semseg.utils.utils import fix_seeds, setup_cudnn, cleanup_ddp, setup_ddp
 from thop import profile
 from thop import clever_format
+from ptflops import get_model_complexity_info
+
 
 def main(cfg):
     device = torch.device(cfg['DEVICE'])
@@ -23,6 +25,12 @@ def main(cfg):
     flops, params = clever_format([flops, params], "%.3f")
     print(f"FLOPs: {flops}")
     print(f"Parameters: {params}")
+
+    flops, params = get_model_complexity_info(model, (3, 352, 352), as_strings=True, print_per_layer_stat=True)
+
+    print('FLOPs:', flops)
+
+    print('Parameters:', params)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -209,6 +209,10 @@ class PoolPolyp(BaseModel):
         y2 = self.cbam2(x2)
         y3 = self.cbam3(x3)
         y4 = self.cbam4(x4)
+        # y1 = x1
+        # y2 = x2
+        # y3 = x3
+        # y4 = x4
 
         x1_size = x1.size()[2:]
         x2_size = x2.size()[2:]
@@ -295,11 +299,22 @@ class PoolPolyp(BaseModel):
         # x = ra3_feat + y4_3
         # score3 = F.interpolate(x, x_size, mode='bicubic', align_corners=True)
 
-        # y3_2 = F.interpolate(x, x2_size, mode='bicubic', align_corners=True)
-        # x_cfp_2 = self.CFP_2(x2)
-        # x = -1*(torch.sigmoid(y3_2)) + 1
-        # x_mlp_2 = self.MLP_2(x_cfp_2)
-        # x = x.expand(-1, 192, -1, -1).mul(x_mlp_2)
+        # y3_2 = F.irpolate(y, size=x4_size, mode='bicubic', align_corners=True)
+        # x_cfp_4 = self.CFP_4(x4)
+        # x = -1*(torch.sigmoid(y5_4)) + 1
+        # x_mlp_4 = self.MLP_4(x_cfp_4)
+        # x = x.expand(-1, 768, -1, -1).mul(x_mlp_4)
+        # x = self.ra4_conv1(x)
+        # x = F.relu(self.ra4_conv2(x))
+        # x = F.relu(self.ra4_conv3(x))
+        # x = F.relu(self.ra4_conv4(x))
+        # ra4_feat = self.ra4_conv5(x)
+        # x = ra4_feat + y5_4
+        # score4 = F.interpolate(x, x_size, mode='bicubic', align_corners=True)
+
+        # y4_3 = F.interpolate(x, x3_size, mode='bicubic', align_corners=True)
+        # x_cfp_3 = self.CFP_3(x3)
+        # x = -1*(tond(-1, 192, -1, -1).mul(x_mlp_2)
         # x = self.ra2_conv1(x)
         # x = F.relu(self.ra2_conv2(x))
         # x = F.relu(self.ra2_conv3(x))

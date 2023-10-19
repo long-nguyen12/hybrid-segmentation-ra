@@ -16,8 +16,6 @@ norm_typ: 'batch_norm'
 BN_MOM: 0.9
 SyncBN_MOM: 3e-4
 # Hamburger Parameters
-ham_channels: 512
-# ham_channels: 768
 put_cheese: True
 
 DUAL: False
@@ -25,9 +23,13 @@ SPATIAL: TRUE
 RAND_INIT: True
 
 MD_S: 1
+
+ham_channels: 512
 MD_D: 512
-# MD_D: 768
 MD_R: 64
+
+# ham_channels: 768
+# MD_D: 768
 # MD_R: 96
 
 TRAIN_STEPS: 6
